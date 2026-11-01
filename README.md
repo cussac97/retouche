@@ -13,6 +13,14 @@ Correction automatique façon iPhone pour tout le Mac. Retouche vit dans la barr
 - ⌫ juste après une correction l'annule, et le mot n'est plus jamais corrigé.
 - Les lettres du mot se soulèvent, se remettent dans l'ordre et retombent sur le mot corrigé, en moins d'une seconde.
 
+## Installer
+
+1. Téléchargez [**Retouche.dmg**](https://github.com/cussac97/retouche/releases/latest/download/Retouche.dmg) (macOS 14 ou plus récent, Mac Apple silicon ou Intel), ouvrez-le et glissez Retouche dans Applications.
+2. Retouche n'est pas encore signé par un compte développeur Apple, donc macOS refuse de l'ouvrir la première fois. Ouvrez **Réglages Système › Confidentialité et sécurité**, descendez jusqu'au message sur Retouche et cliquez sur **Ouvrir quand même**.
+3. Autorisez Retouche dans **Réglages Système › Confidentialité et sécurité › Accessibilité** : c'est ce qui lui permet de voir la frappe et de corriger le mot. Après une mise à jour, macOS peut redemander cette autorisation ; si Retouche est coché mais demande toujours l'accès, cliquez sur **Réinitialiser l'autorisation** dans son menu.
+
+Apple Intelligence départage les corrections ambiguës sur macOS 26 ou plus récent, quand elle est activée sur le Mac.
+
 ## Comment ça marche
 
 ```
@@ -30,7 +38,7 @@ Touches ──► Event tap (thread dédié) ──► TypingSession ──► C
 - **Aucun ralentissement.** Le mot est évalué pendant que vous le tapez. Quand vous appuyez sur espace, la réponse est presque toujours prête. Sinon, la correction arrive un instant plus tard, sans jamais bloquer la frappe.
 - **Rien ne sort du Mac.** Pas de réseau, pas de journal de frappe.
 
-## Lancer
+## Compiler
 
 Prérequis : macOS 14 ou plus récent, Xcode 16 ou plus récent (Xcode 26 ou plus récent pour Apple Intelligence).
 
@@ -47,7 +55,8 @@ Ouvrez `Retouche.xcodeproj` dans Xcode pour développer.
 ```bash
 make test       # tests unitaires du moteur
 make eval       # tape ~140 phrases FR/EN à travers le vrai moteur : précision et latence (STRENGTH=bold…, IA=1)
-make snapshots  # rendu PNG du menu, de la bulle et des réglages
+make snapshots  # rendu PNG du menu, de la bulle, de l'icône de barre des menus et des réglages
+make dmg        # build Release universel dans build/Retouche.dmg, le fichier joint à chaque release
 make site       # page de présentation et démo animée, sur http://127.0.0.1:5180 (Node 18+)
 ```
 

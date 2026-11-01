@@ -62,34 +62,82 @@ body {
   color: var(--page-text-soft);
 }
 
-.hero__replay {
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-top: 28px;
-  padding: 8px 16px;
+}
+
+.hero__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
   border: 1px solid var(--page-line);
   border-radius: 999px;
-  background: none;
   color: var(--page-text);
-  font: inherit;
   font-size: 14px;
   font-weight: 500;
+  text-decoration: none;
+}
+
+.hero__button:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.hero__button--primary {
+  border-color: transparent;
+  background: var(--page-accent);
+  color: #fff;
+}
+
+.hero__button--primary:hover {
+  background: #3a6af0;
+}
+
+.hero__meta {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--page-text-soft);
+}
+
+.hero__meta a {
+  color: inherit;
+}
+
+.hero__replay {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 4px 0;
+  border: none;
+  background: none;
+  color: var(--page-text-soft);
+  font: inherit;
+  font-size: 13px;
   cursor: pointer;
 }
 
 .hero__replay:hover {
-  background: rgba(0, 0, 0, 0.04);
+  color: var(--page-text);
 }
 
-.hero__replay:focus-visible {
+:is(.hero__button, .hero__replay, .hero__meta a):focus-visible {
   outline: 2px solid var(--page-accent);
   outline-offset: 2px;
 }
 
 .hero__demo {
   min-width: 0;
+}
+
+.hero__stage {
   transition: opacity 0.2s ease;
 }
 
-.hero__demo[data-hidden] {
+.hero__stage[data-hidden] {
   opacity: 0;
 }
 

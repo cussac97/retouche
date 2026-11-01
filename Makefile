@@ -1,6 +1,6 @@
 APP = build/Build/Products/Debug/Retouche.app
 
-.PHONY: build run test eval snapshots site clean
+.PHONY: build run test eval snapshots dmg site clean
 
 build:
 	xcodebuild -project Retouche.xcodeproj -scheme Retouche -configuration Debug -derivedDataPath build build | xcbeautify 2>/dev/null || \
@@ -25,6 +25,15 @@ snapshots: build
 	mkdir -p build/snapshots
 	RETOUCHE_SNAPSHOTS=$(CURDIR)/build/snapshots $(APP)/Contents/MacOS/Retouche
 	open build/snapshots
+
+# Universal Release build in build/Retouche.dmg, the file attached to each GitHub release.
+dmg:
+	xcodebuild -project Retouche.xcodeproj -scheme Retouche -configuration Release -derivedDataPath build -destination 'generic/platform=macOS' build -quiet
+	rm -rf build/dmg build/Retouche.dmg
+	mkdir -p build/dmg
+	ditto build/Build/Products/Release/Retouche.app build/dmg/Retouche.app
+	ln -s /Applications build/dmg/Applications
+	hdiutil create -volname Retouche -srcfolder build/dmg -format UDZO build/Retouche.dmg
 
 # The presentation page and its animated demo, on http://127.0.0.1:5180.
 site:

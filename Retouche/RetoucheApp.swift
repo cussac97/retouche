@@ -34,19 +34,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-private struct MenuBarIcon: View {
+struct MenuBarIcon: View {
     let model: AppModel
 
     var body: some View {
-        Image(systemName: symbol)
+        Self.image(permission: model.permission, isCorrecting: model.isCorrecting)
             .symbolEffect(.bounce, value: model.correctionPulse)
             .accessibilityLabel("Retouche")
     }
 
-    private var symbol: String {
-        switch model.permission {
-        case .missing, .needsRelaunch: "exclamationmark.triangle"
-        case .checking, .granted: model.isCorrecting ? "character.cursor.ibeam" : "pause.circle"
+    /// The app icon's "é" and I-beam while correcting, a custom symbol so it bounces like the others.
+    static func image(permission: PermissionState, isCorrecting: Bool) -> Image {
+        switch permission {
+        case .missing, .needsRelaunch: Image(systemName: "exclamationmark.triangle")
+        case .checking, .granted: isCorrecting ? Image("retouche.cursor") : Image(systemName: "pause.circle")
         }
     }
 }

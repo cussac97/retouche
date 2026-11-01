@@ -12,6 +12,7 @@ enum Snapshots {
             let suffix = appearance == .aqua ? "light" : "dark"
             render(MenuContentView(model: model), size: CGSize(width: 330, height: 470), appearance: appearance, to: "\(directory)/menu-\(suffix).png")
             render(overlayFrames(), size: CGSize(width: 640, height: 300), appearance: appearance, to: "\(directory)/overlay-\(suffix).png")
+            render(menuBarIcons(), size: CGSize(width: 140, height: 28), appearance: appearance, to: "\(directory)/menubar-\(suffix).png")
         }
         render(SettingsView(model: model), size: CGSize(width: 520, height: 430), appearance: .aqua, to: "\(directory)/settings.png")
         return true
@@ -49,6 +50,17 @@ enum Snapshots {
         .padding(4)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(nsColor: .textBackgroundColor))
+    }
+
+    /// The menu bar icon correcting, paused and missing its permission, at the menu bar's size.
+    private static func menuBarIcons() -> some View {
+        HStack(spacing: 22) {
+            MenuBarIcon.image(permission: .granted, isCorrecting: true)
+            MenuBarIcon.image(permission: .granted, isCorrecting: false)
+            MenuBarIcon.image(permission: .missing, isCorrecting: false)
+        }
+        .font(.system(size: 15))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private static func render(_ view: some View, size: CGSize, appearance: NSAppearance.Name, to path: String) {
