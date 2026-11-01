@@ -1,5 +1,6 @@
 import AppKit
 import Observation
+import OSLog
 import RetoucheKit
 import ServiceManagement
 
@@ -58,6 +59,9 @@ final class AppModel {
     var usesIntelligence: Bool {
         didSet { defaults.set(usesIntelligence, forKey: Keys.intelligence); refreshRuntime() }
     }
+    var strength: CorrectionStrength {
+        didSet { defaults.set(strength.rawValue, forKey: Keys.strength); refreshEngine() }
+    }
 
     // MARK: State
 
@@ -96,6 +100,7 @@ final class AppModel {
         excludedApps = defaults.stringArray(forKey: Keys.excluded) ?? []
         ignoredWords = defaults.stringArray(forKey: Keys.ignored) ?? []
         usesIntelligence = defaults.bool(forKey: Keys.intelligence)
+        strength = defaults.string(forKey: Keys.strength).flatMap(CorrectionStrength.init(rawValue:)) ?? .balanced
         loadStatistics()
 
         keyboard = KeyboardService(hooks: makeHooks())
@@ -125,6 +130,12 @@ final class AppModel {
         checkPermission()
     }
 
+    /// For an entry left over from an earlier build: checked in System Settings, yet not trusted.
+    func repairPermission() {
+        Accessibility.resetTrust()
+        requestPermission()
+    }
+
     func relaunch() {
         let url = Bundle.main.bundleURL
         let configuration = NSWorkspace.OpenConfiguration()
@@ -143,6 +154,7 @@ final class AppModel {
         permissionTimer?.invalidate()
         permissionTimer = nil
         permission = keyboard.isTapRunning || keyboard.startTap() ? .granted : .needsRelaunch
+        Self.log.notice("Accessibility trusted, keyboard tap \(self.permission == .granted ? "running" : "refused", privacy: .public)")
         refreshRuntime()
     }
 
@@ -182,7 +194,7 @@ final class AppModel {
             do {
                 if newValue { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
             } catch {
-                NSLog("Retouche: login item change failed: \(error.localizedDescription)")
+                Self.log.error("Login item change failed: \(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -238,8 +250,11 @@ final class AppModel {
         correctionPulse += 1
         countCorrection()
         guard showsAnimation else { return }
-        keyboard.locate(applied) { [weak self] rect in
-            self?.overlay.show(applied.correction, at: rect)
+        let app = frontmostApp?.bundleID ?? "-"
+        keyboard.locate(applied) { [weak self] anchor in
+            // Where the bubble went, never what was typed.
+            Self.log.notice("Bubble anchor in \(app, privacy: .public): \(anchor?.precision.rawValue ?? "none", privacy: .public)")
+            self?.overlay.show(applied.correction, at: anchor)
         }
     }
 
@@ -260,6 +275,8 @@ final class AppModel {
             icon: application.icon
         )
         keyboard.focusChanged(to: application)
+        // Have the model loaded before the first close call in this app.
+        if usesIntelligence, intelligenceStatus == .available { keyboard.arbiter?.prewarm() }
         refreshRuntime()
     }
 
@@ -267,7 +284,6 @@ final class AppModel {
         keyboardLayoutName = snapshot.localizedName
         keyboardLayout = snapshot.layout
         isInputMethodActive = !snapshot.isPlainKeyboardLayout
-        refreshEngine()
         refreshRuntime()
     }
 
@@ -275,7 +291,13 @@ final class AppModel {
         guard let keyboard else { return }
         var languages = [primaryLanguage]
         if !secondaryLanguage.isEmpty, secondaryLanguage != primaryLanguage { languages.append(secondaryLanguage) }
-        keyboard.engine.update(EngineConfiguration(languages: languages, layout: keyboardLayout, ignoredWords: Set(ignoredWords)))
+        keyboard.engine.update(EngineConfiguration(
+            languages: languages,
+            layout: keyboardLayout,
+            ignoredWords: Set(ignoredWords),
+            strength: strength,
+            asksContext: usesIntelligence && intelligenceStatus == .available && !isSystemAutocorrectEnabled
+        ))
     }
 
     private func refreshRuntime() {
@@ -286,6 +308,8 @@ final class AppModel {
             usesArbiter: usesIntelligence,
             allowsLateCorrections: !isSystemAutocorrectEnabled
         ))
+        // Close calls go to Apple Intelligence only while it can answer late.
+        refreshEngine()
     }
 
     /// macOS's own "Correct spelling automatically" (Keyboard › Text Input), on unless the user turned it off.
@@ -319,6 +343,8 @@ final class AppModel {
 
     // MARK: Constants
 
+    private static let log = Logger(subsystem: "app.retouche.Retouche", category: "app")
+
     static func matches(_ bundleID: String, _ rules: [String]) -> Bool {
         rules.contains { $0 == bundleID || ($0.hasSuffix(".") && bundleID.hasPrefix($0)) }
     }
@@ -340,6 +366,7 @@ final class AppModel {
         static let excluded = "excludedApps"
         static let ignored = "ignoredWords"
         static let intelligence = "usesIntelligence"
+        static let strength = "correctionStrength"
         static let day = "stats.day"
         static let dayCount = "stats.dayCount"
         static let total = "stats.total"
@@ -357,6 +384,7 @@ extension AppModel {
         frontmostApp = FrontmostApp(name: "Messages", bundleID: "com.apple.MobileSMS", icon: NSWorkspace.shared.icon(forFile: "/System/Applications/Messages.app"))
         let samples: [(String, String, String, Correction.Source, TimeInterval, Bool, String)] = [
             ("continure", "continuer", "fr", .appleSpelling, 40, false, "Messages"),
+            ("cafr", "café", "fr", .appleIntelligence, 95, false, "Messages"),
             ("teh", "the", "en", .appleSpelling, 180, false, "Slack"),
             ("deja", "déjà", "fr", .appleSpelling, 420, false, "Mail"),
             ("adress", "address", "en", .keyboardModel, 900, false, "Safari"),

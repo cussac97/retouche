@@ -204,7 +204,7 @@ final class KeyboardController: @unchecked Sendable {
             return .keep(language: language)
         case .ambiguous(let ambiguity):
             guard state.usesArbiter, state.allowsLateCorrections, let arbiter, arbiter.isAvailable else {
-                return .keep(language: ambiguity.language)
+                return ambiguity.fallback.map { .correct($0) } ?? .keep(language: ambiguity.language)
             }
             consult(arbiter, about: ambiguity, id: id)
             return .deferred
@@ -223,7 +223,7 @@ final class KeyboardController: @unchecked Sendable {
             if let arbiter, arbiter.isAvailable {
                 consult(arbiter, about: ambiguity, id: id)
             } else {
-                enqueue(id: id, correction: nil)
+                enqueue(id: id, correction: ambiguity.fallback)
             }
         }
     }
@@ -231,10 +231,7 @@ final class KeyboardController: @unchecked Sendable {
     private func consult(_ arbiter: any ContextArbiter, about ambiguity: Ambiguity, id: UInt64) {
         Task.detached(priority: .userInitiated) { [weak self] in
             let choice = await arbiter.resolve(ambiguity)
-            let correction = choice.map {
-                Correction(original: ambiguity.word, replacement: $0, language: ambiguity.language, source: .appleIntelligence)
-            }
-            self?.enqueue(id: id, correction: correction)
+            self?.enqueue(id: id, correction: ambiguity.correction(choosing: choice))
         }
     }
 

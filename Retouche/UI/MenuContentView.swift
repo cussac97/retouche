@@ -40,13 +40,13 @@ struct MenuContentView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 11) {
-            AppGlyph(isActive: model.isCorrecting)
-            VStack(alignment: .leading, spacing: 2) {
+        HStack(spacing: 10) {
+            AppIcon(isActive: model.isCorrecting)
+            VStack(alignment: .leading, spacing: 1) {
                 Text("Retouche")
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .font(.system(size: 13, weight: .semibold))
                 Text(statusText)
-                    .font(.system(size: 11.5))
+                    .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                     .contentTransition(.opacity)
             }
@@ -72,20 +72,25 @@ struct MenuContentView: View {
         }
     }
 
+    /// One number leads; the language of the current sentence sits quietly beside it.
     private var summary: some View {
-        HStack(spacing: 10) {
-            StatTile(
-                value: model.correctionsToday.formatted(),
-                label: model.correctionsToday > 1 ? "corrections aujourd'hui" : "correction aujourd'hui",
-                systemImage: "checkmark.seal.fill"
-            )
-            StatTile(
-                value: model.detectedLanguage.map(LanguageName.short) ?? LanguageName.short(model.primaryLanguage),
-                label: "langue détectée",
-                systemImage: "globe"
-            )
-            .animation(.smooth, value: model.detectedLanguage)
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text(model.correctionsToday.formatted())
+                .font(.system(size: 28, weight: .semibold))
+                .monospacedDigit()
+                .contentTransition(.numericText())
+            Text(model.correctionsToday > 1 ? "corrections aujourd'hui" : "correction aujourd'hui")
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 8)
+            Label(LanguageName.full(model.detectedLanguage ?? model.primaryLanguage), systemImage: "globe")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .help("Langue de la phrase en cours")
+                .contentTransition(.opacity)
+                .animation(.smooth, value: model.detectedLanguage)
         }
+        .lineLimit(1)
     }
 
     private var footer: some View {
@@ -129,8 +134,8 @@ private struct RecentCorrectionsList: View {
 
             if model.recent.isEmpty {
                 Text("Vos corrections apparaîtront ici. Appuyez sur ⌫ juste après une correction pour l'annuler.")
-                    .font(.system(size: 11.5))
-                    .foregroundStyle(.tertiary)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 14)
                     .padding(.bottom, 12)
@@ -159,21 +164,20 @@ private struct CorrectionRow: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(record.wasReverted ? AnyShapeStyle(.tertiary) : AnyShapeStyle(Theme.gradient))
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(record.wasReverted ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.tint))
                 .frame(width: 14)
+                .help(record.correction.source == .appleIntelligence ? "Choisi par Apple Intelligence d'après la phrase" : "")
             HStack(spacing: 5) {
                 Text(record.correction.original)
-                    .strikethrough(!record.wasReverted, color: .secondary.opacity(0.6))
                     .foregroundStyle(.secondary)
-                Image(systemName: "arrow.forward")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(.quaternary)
+                Text("→")
+                    .foregroundStyle(.tertiary)
                 Text(record.correction.replacement)
                     .fontWeight(.medium)
                     .strikethrough(record.wasReverted, color: .secondary)
             }
-            .font(.system(size: 12.5, design: .rounded))
+            .font(.system(size: 13))
             .lineLimit(1)
             Spacer(minLength: 4)
             if isHovered && !record.wasReverted {
@@ -187,20 +191,20 @@ private struct CorrectionRow: View {
                 .transition(.opacity)
             } else {
                 Text(caption)
-                    .font(.system(size: 10.5))
+                    .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
                     .lineLimit(1)
             }
         }
         .padding(.horizontal, 8)
-        .frame(height: 26)
+        .frame(height: 28)
         .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(isHovered ? Color.primary.opacity(0.06) : .clear))
         .onHover { hovering in withAnimation(.easeOut(duration: 0.12)) { isHovered = hovering } }
     }
 
     private var icon: String {
         if record.wasReverted { return "arrow.uturn.backward" }
-        return record.correction.source == .appleIntelligence ? "sparkles" : "checkmark"
+        return record.correction.source == .appleIntelligence ? Symbol.intelligence : "checkmark"
     }
 
     private var caption: String {
@@ -223,7 +227,7 @@ private struct FrontmostAppRow: View {
                     .frame(width: 18, height: 18)
             }
             Text(isPaused ? "Désactivé dans \(app.name)" : "Actif dans \(app.name)")
-                .font(.system(size: 12))
+                .font(.system(size: 13))
                 .lineLimit(1)
             Spacer()
             Toggle("", isOn: Binding(get: { !isPaused }, set: { _ in toggle() }))
@@ -244,10 +248,10 @@ struct PermissionCard: View {
                     .font(.system(size: 13, weight: .semibold))
             } icon: {
                 Image(systemName: "lock.shield.fill")
-                    .foregroundStyle(Theme.gradient)
+                    .foregroundStyle(.tint)
             }
             Text("Retouche a besoin de cette autorisation pour voir les mots que vous tapez et les corriger dans toutes vos apps. Tout reste sur votre Mac : rien n'est enregistré ni envoyé.")
-                .font(.system(size: 11.5))
+                .font(.system(size: 11))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Button {
@@ -264,6 +268,20 @@ struct PermissionCard: View {
                     .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
             }
+            Divider()
+                .padding(.vertical, 2)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Retouche est déjà coché mais rien ne se passe ?")
+                    .font(.system(size: 11, weight: .medium))
+                Text("macOS a gardé l'autorisation d'une version précédente de l'app. Réinitialisez-la, puis cochez Retouche à nouveau.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Réinitialiser l'autorisation") {
+                    model.repairPermission()
+                }
+                .controlSize(.small)
+            }
         }
     }
 }
@@ -276,7 +294,7 @@ private struct RelaunchCard: View {
             Text("Autorisation accordée")
                 .font(.system(size: 13, weight: .semibold))
             Text("macOS demande de relancer Retouche pour activer la correction.")
-                .font(.system(size: 11.5))
+                .font(.system(size: 11))
                 .foregroundStyle(.secondary)
             Button {
                 model.relaunch()

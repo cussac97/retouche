@@ -49,12 +49,22 @@ public struct Ambiguity: Hashable, Sendable {
     public var candidates: [String]
     public var language: String
     public var sentencePrefix: String
+    /// The engine's own pick when it has one: applied if no arbiter answers. With a
+    /// fallback the arbiter only chooses among `candidates`; without one it may keep the word.
+    public var fallback: Correction?
 
-    public init(word: String, candidates: [String], language: String, sentencePrefix: String) {
+    public init(word: String, candidates: [String], language: String, sentencePrefix: String, fallback: Correction? = nil) {
         self.word = word
         self.candidates = candidates
         self.language = language
         self.sentencePrefix = sentencePrefix
+        self.fallback = fallback
+    }
+
+    /// The correction to apply once the arbiter chose `choice` (nil: no answer, or keep the word).
+    public func correction(choosing choice: String?) -> Correction? {
+        guard let choice, choice != fallback?.replacement else { return fallback }
+        return Correction(original: word, replacement: choice, language: language, source: .appleIntelligence)
     }
 }
 
@@ -72,16 +82,31 @@ public enum Decision: Hashable, Sendable {
     }
 }
 
+/// How readily the engine replaces a word it does not know.
+public enum CorrectionStrength: String, CaseIterable, Hashable, Sendable {
+    /// Only clear slips: swapped or doubled letters, a neighbouring key, accents, apostrophes.
+    case cautious
+    case balanced
+    /// Also less certain guesses, and two words typed without the space ("alot" → "a lot").
+    case bold
+}
+
 public struct EngineConfiguration: Hashable, Sendable {
     /// NSSpellChecker language identifiers, primary language first.
     public var languages: [String]
     public var layout: KeyboardLayout
     /// Lowercased words the user does not want corrected.
     public var ignoredWords: Set<String>
+    public var strength: CorrectionStrength
+    /// A context arbiter will be consulted: when another word is about as easy to explain
+    /// as the engine's pick ("cafr": "car" or "café"), report an `Ambiguity` with that pick as fallback.
+    public var asksContext: Bool
 
-    public init(languages: [String] = ["fr", "en"], layout: KeyboardLayout = .azerty, ignoredWords: Set<String> = []) {
+    public init(languages: [String] = ["fr", "en"], layout: KeyboardLayout = .azerty, ignoredWords: Set<String> = [], strength: CorrectionStrength = .balanced, asksContext: Bool = false) {
         self.languages = languages.isEmpty ? ["en"] : languages
         self.layout = layout
         self.ignoredWords = ignoredWords
+        self.strength = strength
+        self.asksContext = asksContext
     }
 }

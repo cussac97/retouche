@@ -19,9 +19,40 @@ enum Lexicon {
         character.isLetter || character.isNumber || apostrophes.contains(character) || character == "-"
     }
 
-    private static let elisionHeads: Set<String> = [
+    static let elisionHeads: Set<String> = [
         "l", "d", "j", "m", "t", "s", "c", "n", "qu", "jusqu", "lorsqu", "puisqu", "quoiqu",
     ]
+
+    /// "il y a" and friends, fused by fast typing.
+    static let fusedPhrases: [String: String] = [
+        "ilya": "il y a", "ilyen": "il y en", "ilyavait": "il y avait", "ilyaura": "il y aura", "ilyaurait": "il y aurait",
+    ]
+
+    /// The same without "il". Alone they are deliberate slang ("ya un souci");
+    /// after "il" or "n'" they are a missing space ("il ya", "n'ya").
+    static let fusedAfterSubject: [String: String] = [
+        "ya": "y a", "yen": "y en", "yavait": "y avait", "yaura": "y aura", "yaurait": "y aurait",
+    ]
+
+    /// Words so common after an elided article or pronoun that "dun" is "d'un" even though "dun" is English.
+    static let elidedCoreWords: Set<String> = [
+        "un", "une", "il", "ils", "elle", "elles", "en", "y", "on", "ai", "as", "a", "est", "es", "était", "avait",
+        "ont", "avoir", "être", "autre", "autres", "eux", "abord", "accord", "habitude", "ici",
+    ]
+
+    /// Short grammatical words that people glue to the next or previous word ("alot", "parcontre").
+    static func functionWords(for language: String) -> Set<String> {
+        language.hasPrefix("fr")
+            ? ["a", "à", "y", "de", "du", "des", "la", "le", "les", "un", "une", "en", "et", "ou", "par", "pour", "sur",
+               "dans", "avec", "sans", "ne", "pas", "que", "qui", "se", "ce", "il", "on", "je", "tu", "me", "te", "plus", "tout"]
+            : ["a", "i", "an", "the", "of", "to", "in", "on", "at", "as", "is", "it", "be", "by", "for", "and", "or",
+               "so", "not", "each", "any", "some", "every", "all", "up", "no"]
+    }
+
+    /// The last word of `text`, if any.
+    static func lastWord(of text: String) -> String? {
+        text.split(whereSeparator: { !isWordCharacter($0) }).last.map(String.init)
+    }
 
     /// Splits a French elision such as "l'appartemnet" into "l'" and "appartemnet".
     static func splitElision(_ word: String) -> (head: String, body: String)? {

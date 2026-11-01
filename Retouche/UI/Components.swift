@@ -1,47 +1,43 @@
+import RetoucheKit
 import SwiftUI
 
-struct AppGlyph: View {
+extension CorrectionStrength {
+    var title: String {
+        switch self {
+        case .cautious: "Prudente"
+        case .balanced: "Équilibrée"
+        case .bold: "Audacieuse"
+        }
+    }
+
+    var summary: String {
+        switch self {
+        case .cautious: "Seulement les fautes évidentes : lettres inversées ou doublées, touche voisine, accent ou apostrophe oubliés."
+        case .balanced: "Corrige aussi les mots plus abîmés quand une seule correction est plausible. Recommandé."
+        case .bold: "Tente davantage de corrections, y compris les mots collés (« alot » → « a lot »). Plus de corrections, un peu plus de risques."
+        }
+    }
+}
+
+/// The app's own icon, grayed out while correction is paused.
+struct AppIcon: View {
     var isActive: Bool
-    var size: CGFloat = 30
+    var size: CGFloat = 28
 
     var body: some View {
-        RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-            .fill(isActive ? AnyShapeStyle(Theme.gradient) : AnyShapeStyle(Color.secondary.opacity(0.35)))
+        Image(nsImage: NSApp.applicationIconImage)
+            .resizable()
             .frame(width: size, height: size)
-            .overlay {
-                Image(systemName: "character.cursor.ibeam")
-                    .font(.system(size: size * 0.5, weight: .semibold))
-                    .foregroundStyle(.white)
-            }
-            .shadow(color: isActive ? Color.accentColor.opacity(0.35) : .clear, radius: 6, y: 2)
+            .saturation(isActive ? 1 : 0)
+            .opacity(isActive ? 1 : 0.6)
             .animation(.smooth, value: isActive)
     }
 }
 
-struct StatTile: View {
-    var value: String
-    var label: String
-    var systemImage: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 5) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(Theme.gradient)
-                Text(value)
-                    .font(.system(size: 17, weight: .semibold, design: .rounded))
-                    .contentTransition(.numericText())
-                    .lineLimit(1)
-            }
-            Text(label)
-                .font(.system(size: 10.5))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
-        .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color.primary.opacity(0.045)))
+enum Symbol {
+    /// Apple Intelligence's own mark, for what its model decided.
+    static var intelligence: String {
+        if #available(macOS 15.1, *) { "apple.intelligence" } else { "text.quote" }
     }
 }
 
@@ -56,7 +52,7 @@ struct MenuRowButtonStyle: ButtonStyle {
 
         var body: some View {
             configuration.label
-                .font(.system(size: 12.5))
+                .font(.system(size: 13))
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Color.primary.opacity(isHovered || configuration.isPressed ? 0.08 : 0)))

@@ -54,12 +54,12 @@ final class KeyboardService {
     }
 
     /// Finds where the corrected word is drawn, for the overlay.
-    func locate(_ applied: TypingSession.Applied, completion: @escaping @MainActor (CGRect?) -> Void) {
-        let length = applied.correction.replacement.utf16.count
-        let offset = applied.tail.utf16.count
+    func locate(_ applied: TypingSession.Applied, completion: @escaping @MainActor (TextAnchor?) -> Void) {
+        let word = applied.correction.replacement
+        let tail = applied.tail
         accessibilityQueue.asyncAfter(deadline: .now() + 0.05) { @Sendable in
-            let rect = Accessibility.boundsOfText(length: length, endingBeforeCaretBy: offset)
-            Task { @MainActor in completion(rect) }
+            let anchor = Accessibility.anchor(forWord: word, followedBy: tail)
+            Task { @MainActor in completion(anchor) }
         }
     }
 }

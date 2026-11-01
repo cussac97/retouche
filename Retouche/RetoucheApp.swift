@@ -28,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.terminate(nil)
             return
         }
+        Diagnostics.start()
         #endif
         model.start()
     }

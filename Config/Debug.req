@@ -1,0 +1,9 @@
+/*
+ * Designated requirement for ad-hoc signed Debug builds.
+ *
+ * Without it, macOS ties the Accessibility permission to the hash of one exact
+ * build, and every rebuild silently loses it. Matching on the bundle identifier
+ * keeps the permission across rebuilds. Release builds signed with a team use
+ * Xcode's default requirement instead.
+ */
+designated => identifier "app.retouche.Retouche"

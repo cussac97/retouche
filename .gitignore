@@ -5,3 +5,5 @@ DerivedData/
 xcuserdata/
 .swiftpm/
 .DS_Store
+Site/node_modules/
+Site/dist/

@@ -16,7 +16,7 @@ struct SettingsView: View {
             WordsSettings(model: model)
                 .tabItem { Label("Mots", systemImage: "character.book.closed") }
             IntelligenceSettings(model: model)
-                .tabItem { Label("Intelligence", systemImage: "sparkles") }
+                .tabItem { Label("Intelligence", systemImage: Symbol.intelligence) }
         }
         .frame(width: 520, height: 430)
         .onAppear { NSApp.activate() }
@@ -34,6 +34,19 @@ private struct GeneralSettings: View {
                 Toggle("Animer chaque correction", isOn: $model.showsAnimation)
                 Toggle("Ouvrir Retouche à l'ouverture de session", isOn: $launchesAtLogin)
                     .onChange(of: launchesAtLogin) { _, newValue in model.launchesAtLogin = newValue }
+            }
+            Section("Force de correction") {
+                Picker("Force de correction", selection: $model.strength) {
+                    ForEach(CorrectionStrength.allCases, id: \.self) { strength in
+                        Text(strength.title).tag(strength)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                Text(model.strength.summary)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             if model.isSystemAutocorrectEnabled {
                 Section {
@@ -220,7 +233,7 @@ private struct IntelligenceSettings: View {
                     }
                 }
             } footer: {
-                Text("Quand l'orthographe seule ne suffit pas à trancher, le modèle d'Apple Intelligence intégré à macOS choisit le mot voulu d'après le contexte de la phrase, entièrement sur votre Mac. La correction arrive alors une fraction de seconde plus tard.")
+                Text("Quand plusieurs corrections sont plausibles (« Je bois un cafr » : car ou café ?), le modèle d'Apple Intelligence intégré à macOS choisit d'après le sens de la phrase, entièrement sur votre Mac. Il ne remplace le choix de Retouche que s'il en est sûr. Ces corrections arrivent environ une demi-seconde plus tard.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -228,6 +241,7 @@ private struct IntelligenceSettings: View {
                 LabeledContent("Orthographe", value: "Correcteur de macOS")
                 LabeledContent("Détection de langue", value: "NaturalLanguage")
                 LabeledContent("Fautes de frappe", value: "Modèle clavier \(model.keyboardLayout.displayName)")
+                LabeledContent("Sens de la phrase", value: model.intelligenceStatus == .available ? "Apple Intelligence, sur le Mac" : "—")
             }
         }
         .formStyle(.grouped)
